@@ -505,8 +505,10 @@ void LiInitializeConnectionCallbacks(PCONNECTION_LISTENER_CALLBACKS clCallbacks)
 #define SCM_H264        0x00001
 #define SCM_HEVC        0x00100
 #define SCM_HEVC_MAIN10 0x00200
-#define SCM_AV1_MAIN8   0x10000 // Sunshine extension
-#define SCM_AV1_MAIN10  0x20000 // Sunshine extension
+//#define SCM_AV1_MAIN8   0x10000 // Sunshine extension
+//#define SCM_AV1_MAIN10  0x20000 // Sunshine extension
+#define SCM_AV1_MAIN8   0x01000 // Sunshine extension
+#define SCM_AV1_MAIN10  0x02000 // Sunshine extension
 
 // SCM masks to identify various codec capabilities
 #define SCM_MASK_H264   SCM_H264

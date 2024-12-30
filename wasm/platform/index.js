@@ -36,6 +36,7 @@ function attachListeners() {
   $('#audioSyncSwitch').on('click', saveAudioSync);
   $('#hdrSwitch').on('click', saveHdr);
   $('.codecVideoMenu li').on('click', saveCodecVideo);
+  $('#statsSwitch').on('click', saveStats);
   $('#addHostCell').on('click', addHost);
   $('#backIcon').on('click', showHostsAndSettingsMode);
   $('#quitCurrentApp').on('click', stopGameWithConfirmation);
@@ -110,6 +111,7 @@ function changeUiModeForNaClLoad() {
   $("#main-content").children().not("#listener, #naclSpinner").hide();
   $('#naclSpinnerMessage').text('Loading Moonlight plugin...');
   $('#naclSpinner').css('display', 'inline-block');
+  $('#stream_stats').css('display', 'inline-block');
 }
 
 function startPollingHosts() {
@@ -635,6 +637,7 @@ function showApps(host) {
   // Show a spinner while the applist loads
   $('#naclSpinnerMessage').text('Loading apps...');
   $('#naclSpinner').css('display', 'inline-block');
+  $('#stream_stats').css('display', 'inline-block');
 
   $("div.game-container").remove();
 
@@ -804,6 +807,7 @@ function startGame(host, appID) {
       const framePacingEnabled = $('#framePacingSwitch').parent().hasClass('is-checked') ? 1 : 0;
       const audioSyncEnabled = $('#audioSyncSwitch').parent().hasClass('is-checked') ? 1 : 0;
       const hdrEnabled = $('#hdrSwitch').parent().hasClass('is-checked') ? 1 : 0;
+      const statsEnabled = $('#statsSwitch').parent().hasClass('is-checked') ? 1 : 0;
       console.log('%c[index.js, startGame]', 'color:green;',
                   'startRequest:' + host.address +
                   ":" + streamWidth +
@@ -814,7 +818,8 @@ function startGame(host, appID) {
                   ":" + framePacingEnabled,
                   ":" + audioSyncEnabled,
                   ":" + hdrEnabled,
-                  ":" + codecVideo);
+                  ":" + codecVideo,
+                  ":" + statsEnabled);
 
       var rikey = generateRemoteInputKey();
       var rikeyid = generateRemoteInputKeyId();
@@ -851,7 +856,8 @@ function startGame(host, appID) {
             audioSyncEnabled,
             hdrEnabled,
             codecVideo,
-            host.serverCodecSupportMode		 
+            host.serverCodecSupportMode,
+            statsEnabled
           ]);
         }, function(failedResumeApp) {
           console.error('%c[index.js, startGame]', 'color:green;', 'Failed to resume the app! Returned error was' + failedResumeApp);
@@ -894,7 +900,8 @@ function startGame(host, appID) {
           audioSyncEnabled,
           hdrEnabled,
           codecVideo,
-          host.serverCodecSupportMode			  
+          host.serverCodecSupportMode,
+          statsEnabled			  
         ]);
       }, function(failedLaunchApp) {
         console.error('%c[index.js, launchApp]', 'color: green;', 'Failed to launch app width id: ' + appID + '\nReturned error was: ' + failedLaunchApp);
@@ -918,6 +925,8 @@ function playGameMode() {
   fullscreenNaclModule();
   $('#loadingSpinner').css('display', 'inline-block');
   Navigation.stop();
+  $('#stream_stats').css('display', 'inline-block');
+  $('#stream_stats').show();
 }
 
 // Maximize the size of the nacl module by scaling and resizing appropriately
@@ -1160,6 +1169,14 @@ function saveHdr() {
   }, 100);
 }
 
+function saveStats() {
+  setTimeout(function() {
+    const chosenStats = $("#statsSwitch").parent().hasClass('is-checked');
+    console.log('%c[index.js, saveStats]', 'color: green;', 'Saving Stats state : ' + chosenStats);
+    storeData('stats', chosenStats, null);
+  }, 100);
+}
+
 function saveCodecVideo() {
   var chosenCodecVideo = $(this).data('value');
   $('#selectCodecVideo').text($(this).text()).data('value', chosenCodecVideo);
@@ -1259,6 +1276,9 @@ function initSamsungKeys() {
       'ChannelList',   // F7
       'ChannelDown',   // F11
       'ChannelUp',     // F12
+      'MediaPlayPause',
+      'MediaPlay',
+      'Info'
     ],
     onKeydownListener: remoteControllerHandler
   };
@@ -1358,6 +1378,17 @@ function loadUserDataCb() {
       document.querySelector('#audioSyncBtn').MaterialIconToggle.uncheck();
     } else {
       document.querySelector('#audioSyncBtn').MaterialIconToggle.check();
+    }
+  });
+  
+  console.log('load stats prefs');
+  getData('stats', function(previousValue) {
+    if (previousValue.stats == null) {
+      document.querySelector('#statsBtn').MaterialIconToggle.check();
+    } else if (previousValue.stats == false) {
+      document.querySelector('#statsBtn').MaterialIconToggle.uncheck();
+    } else {
+      document.querySelector('#statsBtn').MaterialIconToggle.check();
     }
   });
 

@@ -23,6 +23,8 @@ static TimeStamp s_frameDuration;
 static TimeStamp s_pktPts;
 static TimeStamp s_estimatedAudioEnd;
 
+static size_t s_channelCount;
+
 static std::chrono::time_point<std::chrono::steady_clock> s_firstAppend;
 static bool s_hasFirstFrame = false;
 
@@ -38,26 +40,30 @@ static void DecodeAndAppendPacket(samsung::wasm::ElementaryMediaTrack* track,
                                   OpusMSDecoder* decoder,
                                   const unsigned char* sampleData,
                                   int sampleLength) {
-  int decodeLen = opus_multistream_decode(
+  int samplesDecoded = opus_multistream_decode(
       decoder,
       sampleData           , sampleLength,
       s_DecodeBuffer.data(), FRAME_SIZE,
       0);
 
-  if (decodeLen <= 0)
-    s_DecodeBuffer.assign(s_DecodeBuffer.size(), 0);
+  if (samplesDecoded <= 0) {
+    s_DecodeBuffer.assign(s_DecodeBuffer.size(), 0); // Clear buffer on decode error
+    return;
+  }
+  
+    size_t desiredSize = sizeof(opus_int16) * samplesDecoded * s_channelCount;
 
   samsung::wasm::ElementaryMediaPacket pkt{
      s_pktPts,
      s_pktPts,
      s_frameDuration,
      true,
-     s_DecodeBuffer.size() * sizeof(opus_int16),
+     desiredSize,
      s_DecodeBuffer.data(),
      0,
      0,
      0,
-     1,
+     0,
      session_id
   };
 
@@ -65,6 +71,10 @@ static void DecodeAndAppendPacket(samsung::wasm::ElementaryMediaTrack* track,
     s_pktPts += s_frameDuration;
   } else {
     MoonlightInstance::ClLogMessage("Append audio packet failed\n");
+  }
+
+  if (desiredSize > s_DecodeBuffer.size()) {
+    s_DecodeBuffer.resize(desiredSize);
   }
 }
 
@@ -74,6 +84,7 @@ int MoonlightInstance::AudDecInit(int audioConfiguration,
   int rc;
   ClLogMessage("MoonlightInstance::AudDecSetup\n");
   s_pktPts = 0s;
+  s_channelCount = 2; //opusConfig->channelCount; // 2 6 8
 
   s_DecodeBuffer.resize(FRAME_SIZE * MAX_CHANNEL_COUNT);
   s_frameDuration = FrameDuration(opusConfig->samplesPerFrame,
